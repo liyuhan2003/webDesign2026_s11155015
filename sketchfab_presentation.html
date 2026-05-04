@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sketchfab 深度分析報告</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background: #FAFAFA;
+            color: #456874;
+            overflow: hidden;
+        }
+
+        .slides-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 80px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease, visibility 0.6s;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .slide-number {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #A0C6D4;
+        }
+
+        h1 {
+            font-size: 56px;
+            font-weight: 300;
+            letter-spacing: 8px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 36px;
+            font-weight: 300;
+            letter-spacing: 4px;
+            margin-bottom: 40px;
+            color: #A0C6D4;
+        }
+
+        h3 {
+            font-size: 24px;
+            font-weight: 400;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            color: #456874;
+        }
+
+        p {
+            font-size: 18px;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        .content-box {
+            max-width: 900px;
+            text-align: center;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .data-item {
+            text-align: center;
+        }
+
+        .data-item .number {
+            font-size: 48px;
+            font-weight: 300;
+            color: #A0C6D4;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .data-item .label {
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px 60px;
+            max-width: 900px;
+            text-align: left;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .feature-number {
+            font-size: 32px;
+            font-weight: 300;
+            color: #A0C6D4;
+            min-width: 40px;
+        }
+
+        .feature-text h4 {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .feature-text p {
+            font-size: 14px;
+            margin: 0;
+            color: #456874;
+            opacity: 0.8;
+        }
+
+        .pain-point-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px 50px;
+            max-width: 950px;
+        }
+
+        .pain-point {
+            background: #FAFAFA;
+            padding: 25px 30px;
+            border-left: 3px solid #A0C6D4;
+        }
+
+        .pain-point h4 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #456874;
+        }
+
+        .pain-point p {
+            font-size: 14px;
+            margin: 0;
+            opacity: 0.7;
+        }
+
+        .success-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px 40px;
+            max-width: 900px;
+            text-align: left;
+        }
+
+        .success-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .success-icon {
+            width: 50px;
+            height: 50px;
+            background: #A0C6D4;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #FAFAFA;
+            font-size: 20px;
+            font-weight: 300;
+            min-width: 50px;
+        }
+
+        .success-text h4 {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .success-text p {
+            font-size: 13px;
+            margin: 0;
+            opacity: 0.7;
+        }
+
+        .vision-list {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            max-width: 800px;
+        }
+
+        .vision-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 25px;
+            text-align: left;
+        }
+
+        .vision-number {
+            font-size: 28px;
+            font-weight: 300;
+            color: #A0C6D4;
+            min-width: 40px;
+        }
+
+        .vision-content h4 {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .vision-content p {
+            font-size: 14px;
+            margin: 0;
+            opacity: 0.7;
+        }
+
+        .summary-box {
+            max-width: 700px;
+            text-align: center;
+            padding: 40px;
+            border: 1px solid #A0C6D4;
+        }
+
+        .summary-box h3 {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: #456874;
+        }
+
+        .summary-box p {
+            font-size: 16px;
+            line-height: 2;
+        }
+
+        .nav-dots {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #A0C6D4;
+            opacity: 0.3;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .nav-dot.active {
+            opacity: 1;
+        }
+
+        .nav-arrows {
+            position: absolute;
+            top: 50%;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            pointer-events: none;
+        }
+
+        .nav-arrow {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #456874;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transition: background 0.3s, color 0.3s;
+            font-size: 20px;
+            color: #456874;
+        }
+
+        .nav-arrow:hover {
+            background: #456874;
+            color: #FAFAFA;
+        }
+
+        .nav-arrow.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            max-width: 750px;
+            width: 100%;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            gap: 0;
+        }
+
+        .timeline-year {
+            font-size: 22px;
+            font-weight: 300;
+            color: #A0C6D4;
+            min-width: 70px;
+            text-align: right;
+        }
+
+        .timeline-content {
+            padding-left: 30px;
+            border-left: 2px solid #A0C6D4;
+            margin-left: -1px;
+        }
+
+        .timeline-content p {
+            font-size: 15px;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .customer-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 800px;
+        }
+
+        .customer-item {
+            background: #FAFAFA;
+            padding: 20px 15px;
+            border: 1px solid #A0C6D4;
+            text-align: center;
+        }
+
+        .customer-item.empty {
+            background: transparent;
+            border: none;
+        }
+
+        .customer-icon {
+            width: 40px;
+            height: 40px;
+            background: #A0C6D4;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 12px;
+            font-size: 18px;
+            color: #FAFAFA;
+        }
+
+        .customer-item h4 {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .customer-item p {
+            font-size: 12px;
+            margin: 0;
+            opacity: 0.7;
+            line-height: 1.4;
+        }
+
+        .iframe-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            max-width: 900px;
+            justify-items: center;
+        }
+
+        .iframe-grid iframe {
+            width: 400px;
+            height: 280px;
+            border: none;
+        }
+
+        .iframe-wrapper {
+            text-align: center;
+        }
+
+        .iframe-wrapper p {
+            font-size: 12px;
+            margin: 5px 0 0;
+            color: #4A4A4A;
+        }
+
+        .iframe-wrapper a {
+            color: #1CAAD9;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .comparison-table {
+            width: 100%;
+            max-width: 800px;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #A0C6D4;
+            padding: 15px 20px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .comparison-table th {
+            background: #A0C6D4;
+            color: #FAFAFA;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #FAFAFA;
+        }
+
+        .ref-list {
+            text-align: left;
+            font-size: 14px;
+            line-height: 2.2;
+            margin-top: 20px;
+        }
+
+        .ref-list a {
+            color: #456874;
+            text-decoration: none;
+            border-bottom: 1px solid #456874;
+            padding-bottom: 2px;
+        }
+
+        .ref-list a:hover {
+            color: #A0C6D4;
+            border-color: #A0C6D4;
+        }
+
+        .feature-title-slide {
+            font-size: 42px;
+            font-weight: 300;
+            color: #456874;
+        }
+
+        .feature-title-slide span {
+            color: #A0C6D4;
+        }
+
+        .title-iframe-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            max-width: 700px;
+            justify-items: center;
+        }
+
+        .title-iframe-grid iframe {
+            width: 320px;
+            height: 220px;
+            border: none;
+        }
+
+        .title-iframe-wrapper {
+            text-align: center;
+        }
+
+        .title-iframe-wrapper p {
+            font-size: 11px;
+            margin: 5px 0 0;
+            color: #4A4A4A;
+        }
+
+        .title-iframe-wrapper a {
+            color: #1CAAD9;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .feature-image-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            justify-items: center;
+            margin-top: 30px auto 0;
+            max-width: 860px;
+        }
+
+.feature-image-grid img {
+            width: 420px;
+            max-width: 40vw;
+            height: auto;
+            border: 1px solid #A0C6D4;
+        }
+
+        .single-image-center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        .single-image-center img {
+            max-width: 700px;
+            max-height: 500px;
+            width: 60vw;
+            height: auto;
+            border: 1px solid #A0C6D4;
+        }
+        .single-image-center2 img {
+            max-width: auto;
+            max-height: 500px;
+            border: 1px solid #A0C6D4;
+        }
+        .single-image-center3 img {
+            max-width: 900px;
+            max-height: auto;
+            border: 1px solid #A0C6D4;
+        }
+        .single-image-center4 img {
+            max-width: auto;
+            max-height:500px;
+            border: 1px solid #A0C6D4;
+        }
+
+        .image-with-left {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .image-with-left img {
+            width: 760px;
+            max-width: 45vw;
+            height: auto;
+            border: 1px solid #A0C6D4;
+        }
+
+        .image-with-left .left-image {
+            width: 120px;
+            max-width: 10vw;
+            height: auto;
+        }
+
+        .image-with-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+        }
+
+        .image-with-arrow img {
+            max-width: 600px;
+            height: auto;
+            border: 1px solid #A0C6D4;
+        }
+
+        .image-with-arrow .arrow-icon {
+            font-size: 30px;
+            color: #A0C6D4;
+        }
+
+
+
+        @media (max-width: 768px) {
+            h1 { font-size: 36px; }
+            h2 { font-size: 24px; }
+            .data-grid { grid-template-columns: 1fr; gap: 30px; }
+            .feature-list { grid-template-columns: 1fr; }
+            .pain-point-list { grid-template-columns: 1fr; }
+            .success-list { grid-template-columns: 1fr; }
+            .slide { padding: 40px; }
+            .iframe-grid { grid-template-columns: 1fr; }
+            .iframe-grid iframe { width: 100%; height: 220px; }
+            .customer-grid { grid-template-columns: 1fr 1fr 1fr; }
+            .comparison-table { font-size: 12px; }
+            .comparison-table th, .comparison-table td { padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="slides-container">
+        <div class="slide active">
+            <div class="content-box">
+                <h1>SKETCHFAB</h1>
+                <p style="font-size: 20px; color: #456874; opacity: 0.8;">全球最大的 3D 模型發布與探索平台</p>
+                <p style="margin-top: 60px; font-size: 14px; color: #A0C6D4;">WEB-BASED 3D PRESENTATION</p>
+            </div>
+            <div class="slide-number">01 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>平台定位</h2>
+                <p>Sketchfab 是全球最大的 3D 模型發布、分享與探索平台，基於 WebGL / WebXR 技術，讓使用者無需安裝任何軟體，直接在瀏覽器中互動瀏覽 3D、VR、AR 內容。</p>
+                <p style="margin-top: 20px; font-style: italic; color: #A0C6D4;">常被稱為「3D 界的 YouTube」</p>
+            </div>
+            <div class="slide-number">02 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>簡介</h2>
+                <div class="data-grid">
+                    <div class="data-item">
+                        <span class="number">2012</span>
+                        <span class="label">成立年份</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="number">700萬+</span>
+                        <span class="label">會員數量</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="number">500萬+</span>
+                        <span class="label">模型數量</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="number">30+</span>
+                        <span class="label">支援格式</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="number">70+</span>
+                        <span class="label">嵌入平台</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="number">Epic</span>
+                        <span class="label">母公司</span>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">03 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>歷史沿革</h2>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <span class="timeline-year">2011</span>
+                        <div class="timeline-content">
+                            <p>Cédric Pinson 以「ShowWebGL」為名建立原型，發現 3D 創作者只能用 2D 截圖分享作品的根本矛盾。</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-year">2012</span>
+                        <div class="timeline-content">
+                            <p>Alban Denoyel 加入，正式以「Sketchfab」重新啟動。進駐法國加速器 Le Camping，之後入選 Mozilla WebFWD 計畫。</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-year">2013</span>
+                        <div class="timeline-content">
+                            <p>入選紐約 TechStars；完成 Balderton Capital 領投的 $2M 融資。</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-year">2015</span>
+                        <div class="timeline-content">
+                            <p>完成 $7M Series A；進入 Facebook 動態牆白名單；加入 PBR 物理基礎渲染支援。</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-year">2018</span>
+                        <div class="timeline-content">
+                            <p>开设 Sketchfab Store；突破 10 億瀏覽次數、200 萬會員；Oculus 創辦人 Brendan Iribe 個人投資入股。</p>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <span class="timeline-year">2021</span>
+                        <div class="timeline-content">
+                            <p>Epic Games 收購，平台達到 700 萬會員；平台抽成從 30% 降至 12%。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">04 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>主要客戶群</h2>
+                <div class="customer-grid">
+                    <div class="customer-item">
+                        <div class="customer-icon">🎨</div>
+                        <h4>3D 藝術家</h4>
+                        <p>數位設計師</p>
+                    </div>
+                    <div class="customer-item">
+                        <div class="customer-icon">🏗️</div>
+                        <h4>建築師</h4>
+                        <p>工程師</p>
+                    </div>
+                    <div class="customer-item">
+                        <div class="customer-icon">🎮</div>
+                        <h4>遊戲工作室</h4>
+                        <p>獨立開發者</p>
+                    </div>
+                    <div class="customer-item">
+                        <div class="customer-icon">🏛️</div>
+                        <h4>博物館</h4>
+                        <p>500+ 機構</p>
+                    </div>
+                    <div class="customer-item empty"></div>
+                    <div class="customer-item">
+                        <div class="customer-icon">🛒</div>
+                        <h4>電商品牌</h4>
+                        <p>3D 展示</p>
+                    </div>
+                    <div class="customer-item">
+                        <div class="customer-icon">🎓</div>
+                        <h4>學術機構</h4>
+                        <p>考古學家</p>
+                    </div>
+                    <div class="customer-item">
+                        <div class="customer-icon">🥽</div>
+                        <h4>VR / AR</h4>
+                        <p>開發者</p>
+                    </div>
+                    <div class="customer-item">
+                        <div class="customer-icon">🖨️</div>
+                        <h4>3D 列印</h4>
+                        <p>愛好者</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">05 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>核心功能</h2>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <span class="feature-number">01</span>
+                        <div class="feature-text">
+                            <h4>即時 3D 瀏覽器</h4>
+                            <p>WebGL / WebXR 技術，無需插件直接瀏覽</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-number">02</span>
+                        <div class="feature-text">
+                            <h4>跨平台嵌入</h4>
+                            <p>一鍵嵌入 Facebook、Twitter 等 70+ 平台</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-number">03</span>
+                        <div class="feature-text">
+                            <h4>PBR 材質編輯</h4>
+                            <p>物理基礎渲染，瀏覽器內直接調整</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-number">04</span>
+                        <div class="feature-text">
+                            <h4>格式轉換器</h4>
+                            <p>支援 30+ 格式自動轉換成 glTF / USDZ</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-number">05</span>
+                        <div class="feature-text">
+                            <h4>社群與市集</h4>
+                            <p>類似 IG 的 Feed 加上 3D 資產買賣功能</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">06 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>01</span> 即時 3D 瀏覽器</h2>
+                <p style="margin-bottom: 20px; font-size: 14px; color: #A0C6D4;">WebGL / WebXR 技術展示</p>
+            </div>
+            <div class="title-iframe-grid">
+                <div class="title-iframe-wrapper">
+                    <iframe title="Chinese Dragon Loong" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/66f01ab2a0fd4a589ddecb0a565adfba/embed"></iframe>
+                    <p><a href="https://sketchfab.com/3d-models/chinese-dragon-loong-66f01ab2a0fd4a589ddecb0a565adfba" target="_blank">Chinese Dragon Loong</a></p>
+                </div>
+                <div class="title-iframe-wrapper">
+                    <iframe title="Bugatti EB110 Super Sport" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/4af92c51ecdd4efa9b1c19a1163d9f46/embed"></iframe>
+                    <p><a href="https://sketchfab.com/3d-models/bugatti-eb110-super-sport-1992-by-alexka-4af92c51ecdd4efa9b1c19a1163d9f46" target="_blank">Bugatti EB110</a></p>
+                </div>
+                <div class="title-iframe-wrapper">
+                    <iframe title="Original AWP | Dragon lore" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/798ab94120064b8f8a9235367b773327/embed"></iframe>
+                    <p><a href="https://sketchfab.com/3d-models/original-awp-dragon-lore-798ab94120064b8f8a9235367b773327" target="_blank">AWP Dragon lore</a></p>
+                </div>
+                <div class="title-iframe-wrapper">
+                    <iframe title="Space Station 3" frameborder="0" allowfullscreen mozallowfullscreen="true" webkitallowfullscreen="true" allow="autoplay; fullscreen; xr-spatial-tracking" xr-spatial-tracking execution-while-out-of-viewport execution-while-not-rendered web-share src="https://sketchfab.com/models/a7a6ad10261149cab31aa394bfcf8940/embed"></iframe>
+                    <p><a href="https://sketchfab.com/3d-models/space-station-3-a7a6ad10261149cab31aa394bfcf8940" target="_blank">Space Station 3</a></p>
+                </div>
+            </div>
+            <div class="slide-number">07 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>02</span> 跨平台嵌入</h2>
+            </div>
+            <div class="image-with-arrow">
+                <img src="螢幕擷取畫面 2026-04-25 221823.png" alt="嵌入 Facebook">
+                <span class="arrow-icon">→</span>
+                <img src="螢幕擷取畫面 2026-04-25 221845.png" alt="嵌入 Twitter">
+            </div>
+            <div class="slide-number">08 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>02</span> 跨平台嵌入</h2>
+            </div>
+            <div class="single-image-center">
+                <img src="分享.png" alt="分享功能">
+            </div>
+            <div class="slide-number">09 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>02</span> 跨平台嵌入</h2>
+                <p style="margin-top: 20px; font-size: 14px; color: #A0C6D4;">嵌入功能說明 (1/2)</p>
+            </div>
+            <div class="single-image-center">
+                <img src="IMG_3002 (1).png" alt="嵌入說明圖1">
+            </div>
+            <div class="slide-number">10 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>02</span> 跨平台嵌入</h2>
+                <p style="margin-top: 20px; font-size: 14px; color: #A0C6D4;">嵌入功能說明 (2/2)</p>
+            </div>
+            <div class="single-image-center2">
+                <img src="IMG_3003.PNG" alt="嵌入說明圖2">
+            </div>
+            <div class="slide-number">11 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>03</span> PBR 材質編輯</h2>
+            </div>
+            <div class="single-image-center3">
+                <img src="功能說明.png" alt="PBR 功能說明">
+            </div>
+            <div class="slide-number">12 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>04</span> 格式轉換器</h2>
+            </div>
+            <div class="single-image-center2">
+                <img src="轉檔說明.png" alt="格式轉換說明">
+            </div>
+            <div class="slide-number">13 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>05</span> 社群與市集</h2>
+            </div>
+            <div class="single-image-center3">
+                <img src="社群_留言.png" alt="社群留言功能">
+            </div>
+            <div class="slide-number">14 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>05</span> 社群與市集</h2>
+            </div>
+            <div class="single-image-center3">
+                <img src="社群_搜尋用戶.png" alt="搜尋用戶功能">
+            </div>
+            <div class="slide-number">15 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>05</span> 社群與市集</h2>
+            </div>
+            <div class="single-image-center3">
+                <img src="社群_部落格.png" alt="部落格功能">
+            </div>
+            <div class="slide-number">16 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>05</span> 社群與市集</h2>
+            </div>
+            <div class="single-image-center3">
+                <img src="市集_前往.png" alt="前往市集">
+            </div>
+            <div class="slide-number">17 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide"><span>05</span> 社群與市集</h2>
+            </div>
+            <div class="single-image-center3">
+                <img src="市集_內容.png" alt="市集內容">
+            </div>
+            <div class="slide-number">18 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>解決的痛點</h2>
+                <div class="pain-point-list">
+                    <div class="pain-point">
+                        <h4>痛點 1 — 截圖困難</h4>
+                        <p>3D 藝術家花數百小時製作模型，最終只能用 2D 截圖分享，完全失去立體美感</p>
+                    </div>
+                    <div class="pain-point">
+                        <h4>痛點 2 — 格式地獄</h4>
+                        <p>3D 軟體格式各自封閉，跨軟體分享幾乎不可能</p>
+                    </div>
+                    <div class="pain-point">
+                        <h4>痛點 3 — 安裝門檻</h4>
+                        <p>觀看 3D 內容過去需要安裝特定軟體或插件</p>
+                    </div>
+                    <div class="pain-point">
+                        <h4>痛點 4 — 傳播障礙</h4>
+                        <p>3D 內容無法嵌入社群媒體，觸及率極低</p>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">19 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>與其他平台的差異</h2>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>維度</th>
+                            <th>其他平台</th>
+                            <th>Sketchfab</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>定位</td>
+                            <td>垂直領域（只服務單一行業）</td>
+                            <td>水平平台，服務所有行業</td>
+                        </tr>
+                        <tr>
+                            <td>分享方式</td>
+                            <td>需要下載、安裝特定軟體</td>
+                            <td>瀏覽器直開，零安裝</td>
+                        </tr>
+                        <tr>
+                            <td>社群媒體</td>
+                            <td>無原生整合</td>
+                            <td>唯一整合 FB、Twitter 的 3D 播放器</td>
+                        </tr>
+                        <tr>
+                            <td>VR / AR</td>
+                            <td>需要額外 app</td>
+                            <td>URL 直接開啟 VR，無需 app store</td>
+                        </tr>
+                        <tr>
+                            <td>文化機構</td>
+                            <td>基本無針對性策略</td>
+                            <td>免費授權、500+ 機構夥伴</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="slide-number">20 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>成功因素</h2>
+                <div class="success-list">
+                    <div class="success-item">
+                        <div class="success-icon">1</div>
+                        <div class="success-text">
+                            <h4>技術領先</h4>
+                            <p>最早押注 WebGL WebXR，技術護城河深厚</p>
+                        </div>
+                    </div>
+                    <div class="success-item">
+                        <div class="success-icon">2</div>
+                        <div class="success-text">
+                            <h4>平台飛輪</h4>
+                            <p>創作者上傳 → 觀眾增加 → 更多創作者加入</p>
+                        </div>
+                    </div>
+                    <div class="success-item">
+                        <div class="success-icon">3</div>
+                        <div class="success-text">
+                            <h4>生態整合</h4>
+                            <p>與 Blender、Unity、Epic 深度整合</p>
+                        </div>
+                    </div>
+                    <div class="success-item">
+                        <div class="success-icon">4</div>
+                        <div class="success-text">
+                            <h4>文化機構策略</h4>
+                            <p>免費開放給 500+ 博物館建立公信力</p>
+                        </div>
+                    </div>
+                    <div class="success-item">
+                        <div class="success-icon">5</div>
+                        <div class="success-text">
+                            <h4>Epic Games 加持與時機</h4>
+                            <p>與 Unreal Engine、ArtStation、Fab 形成完整生態閉環，卡在 VR/AR 與元宇宙浪潮</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">21 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>天馬行空的想像 & 進化版</h2>
+                <div class="vision-list">
+                    <div class="vision-item">
+                        <span class="vision-number">01</span>
+                        <div class="vision-content">
+                            <h4>AI 即時生成 + 社群共創平台</h4>
+                            <p>輸入一段文字描述，AI 自動生成 3D 模型並上傳到 Feed，社群可直接在瀏覽器內 Fork、修改、混搭，形成「3D 版 GitHub + Midjourney」的共創生態。</p>
+                        </div>
+                    </div>
+                    <div class="vision-item">
+                        <span class="vision-number">02</span>
+                        <div class="vision-content">
+                            <h4>實體世界的 3D Wikipedia</h4>
+                            <p>用手機掃描任何物體，自動上傳到對應的公共資料庫。走進博物館掃描展品，即時與官方 3D 模型疊加比對，人人都是文化遺產的守護者。</p>
+                        </div>
+                    </div>
+                    <div class="vision-item">
+                        <span class="vision-number">03</span>
+                        <div class="vision-content">
+                            <h4>元宇宙資產身份層</h4>
+                            <p>每個 Sketchfab 模型都擁有跨平台的數位身份，在 Unreal Engine、Unity、Roblox、Fortnite 之間無縫攜帶，形成真正的元宇宙資產護照標準。</p>
+                        </div>
+                    </div>
+                    <div class="vision-item">
+                        <span class="vision-number">04</span>
+                        <div class="vision-content">
+                            <h4>電商 3D 試用革命</h4>
+                            <p>品牌在 Sketchfab 中上傳產品模型，消費者在 AR 中把沙發放進自家客廳、把球鞋穿在腳上預覽效果，直接從 3D 瀏覽器結帳購買。</p>
+                        </div>
+                    </div>
+                    <div class="vision-item">
+                        <span class="vision-number">05</span>
+                        <div class="vision-content">
+                            <h4>教育 3D 沉浸課程平台</h4>
+                            <p>老師在 Sketchfab 上建立可互動的 3D 解剖圖、歷史建築、化學分子結構，學生用手機 AR 把大腦放在桌上旋轉解剖。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="slide-number">22 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2 class="feature-title-slide">期末專題提案</h2>
+            </div>
+            <div class="slide-number">23 / 24</div>
+        </div>
+
+        <div class="slide">
+            <div class="content-box">
+                <h2>參考資料</h2>
+                <div class="ref-list">
+                    <p>[1] <a href="https://en.wikipedia.org/wiki/Sketchfab" target="_blank">Sketchfab — Wikipedia</a>（完整歷史與技術概述）</p>
+                    <p>[2] <a href="https://sketchfab.com/about" target="_blank">About Us — Sketchfab 官方</a>（創辦理念與使命宣言）</p>
+                    <p>[3] <a href="https://sketchfab.com/blogs/community/sketchfab-celebrates-its-10th-anniversary/" target="_blank">十周年回顧 — Sketchfab Blog</a>（2012–2022 里程碑年表）</p>
+                    <p>[4] <a href="https://techcrunch.com/2021/07/21/epic-games-acquires-sketchfab-a-3d-model-sharing-platform/" target="_blank">Epic Games 收購報導 — TechCrunch</a>（收購細節與市場分析）</p>
+                    <p>[5] <a href="https://www.uploadvr.com/sketchfab-alban-denoyel-qa/" target="_blank">CEO Alban Denoyel 深度訪談 — UploadVR</a>（創辦人策略思維與競爭分析）</p>
+                    <p>[6] <a href="https://sketchfab.com/blogs/community/500-cultural-institutions-joined-sketchfab/" target="_blank">500 文化機構里程碑 — Sketchfab Blog</a>（博物館策略與文化遺產計畫）</p>
+                    <p>[7] <a href="https://kewmanagement.com/sketchfab-a-glimpse-of-the-future-in-3d/" target="_blank">Sketchfab: A Glimpse of the Future — Kew Management</a>（商業模式與社群策略）</p>
+                </div>
+            </div>
+            <div class="slide-number">24 / 24</div>
+        </div>
+
+        <div class="nav-arrows">
+            <div class="nav-arrow" id="prevBtn">←</div>
+            <div class="nav-arrow" id="nextBtn">→</div>
+        </div>
+
+        <div class="nav-dots" id="navDots"></div>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const navDots = document.getElementById('navDots');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        let currentSlide = 0;
+
+        slides.forEach((_, index) => {
+            const dot = document.createElement('div');
+            dot.className = 'nav-dot' + (index === 0 ? ' active' : '');
+            dot.addEventListener('click', () => goToSlide(index));
+            navDots.appendChild(dot);
+        });
+
+        function updateSlide() {
+            slides.forEach((slide, index) => {
+                slide.classList.toggle('active', index === currentSlide);
+            });
+
+            document.querySelectorAll('.nav-dot').forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentSlide);
+            });
+
+            prevBtn.classList.toggle('disabled', currentSlide === 0);
+            nextBtn.classList.toggle('disabled', currentSlide === slides.length - 1);
+        }
+
+        function goToSlide(index) {
+            currentSlide = index;
+            updateSlide();
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        }
+
+        nextBtn.addEventListener('click', nextSlide);
+        prevBtn.addEventListener('click', prevSlide);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft') prevSlide();
+        });
+
+        updateSlide();
+    </script>
+</body>
+</html>
